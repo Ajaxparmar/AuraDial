@@ -1,0 +1,416 @@
+// Prisma schema for MongoDB with integrated models for organizational structure, agent management, and content
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Organization: Represents a company or entity that owns users, agents, and resources
+model Organization {
+  id               String            @id @default(cuid()) @map("_id") @db.ObjectId
+  name             String            @unique
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  users            User[]
+  agents           Agent[]
+  projects         Project[]
+  dataLibraryItems DataLibraryItem[]
+  leads            Lead[]
+  phoneNumbers     PhoneNumber[]
+  contacts         Contact[]
+  contactGroups    ContactGroup[]
+  calls            Call[]
+}
+
+// User: Represents an employee or member of an organization
+model User {
+  id             String                   @id @default(cuid()) @map("_id") @db.ObjectId
+  email          String                   @unique
+  password       String // Hashed password
+  name           String?
+  role           UserRole                 @default(MEMBER)
+  createdAt      DateTime                 @default(now())
+  updatedAt      DateTime                 @updatedAt
+  organization   Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String                   @map("_organizationId") @db.ObjectId
+  createdAgents  Agent[]                  @relation("CreatedAgents")
+  managedAgents  AgentManagerAssignment[]
+  createdCalls   Call[]                   @relation("CreatedCalls")
+  posts          Post[]                   // From original schema
+
+  @@index([email, organizationId])
+}
+
+// Post: Represents a blog post or content created by a user
+model Post {
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  published Boolean   @default(false)
+  title     String
+  author    User?     @relation(fields: [authorId], references: [id])
+  authorId  String    @map("_authorId") @db.ObjectId
+
+  @@index([authorId])
+}
+
+// Agent: Represents a conversational AI agent (e.g., Voice Assistant)
+model Agent {
+  id                 String                   @id @default(cuid()) @map("_id") @db.ObjectId
+  name               String
+  type               AgentType                @default(VOICE_ASSISTANT)
+  description        String?
+  status             AgentStatus              @default(DRAFT)
+  createdAt          DateTime                 @default(now())
+  updatedAt          DateTime                 @updatedAt
+  createdBy          User                     @relation("CreatedAgents", fields: [createdById], references: [id], onDelete: Cascade)
+  createdById        String                   @map("_createdById") @db.ObjectId
+  organization       Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId     String                   @map("_organizationId") @db.ObjectId
+  configuration      AgentConfiguration?
+  calls              Call[]
+  leads              Lead[]
+  dataLibraryItems   DataLibraryItem[]
+  projects           ProjectAssignment[]
+  managers           AgentManagerAssignment[]
+  assignedPhoneNumbers PhoneNumber[]
+
+  @@index([organizationId, status])
+  Conversation Conversation[]
+}
+
+// AgentConfiguration: Stores technical settings for an agent
+model AgentConfiguration {
+  id                      String        @id @default(cuid()) @map("_id")
+  agentId                 String        @unique @map("_agentId") @db.ObjectId
+  agent                   Agent         @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  voiceApiDetails         Json?
+  sipTrunkingConfig       Json?
+  speechRecognitionConfig Json?
+  textToSpeechConfig      Json?
+  whatsappEnabled         Boolean       @default(false)
+  whatsappApiDetails      Json?
+  nlpEngineConfig         Json?
+  conversationFlow        Json?
+  externalIntegrations    Json?
+  routingRules            Json?
+  stateManagementStrategy String        @default("SESSION_BASED")
+  stateStorageConfig      Json?
+  customSettings          Json?
+  createdAt               DateTime      @default(now())
+  updatedAt               DateTime      @updatedAt
+
+}
+
+// PhoneNumber: Represents a phone number owned by an organization
+model PhoneNumber {
+  id              String            @id @default(cuid()) @map("_id") @db.ObjectId
+  number          String            @unique
+  countryCode     String?
+  type            PhoneNumberType   @default(LOCAL)
+  status          PhoneNumberStatus @default(ACTIVE)
+  organization    Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId  String            @map("_organizationId") @db.ObjectId
+  assignedAgent   Agent?            @relation(fields: [assignedAgentId], references: [id], onDelete: SetNull)
+  assignedAgentId String?           @map("_assignedAgentId") @db.ObjectId
+  calls           Call[]            @relation("OriginatingNumber")
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([organizationId, number, status])
+}
+
+// Contact: Represents an individual contact for calls or messages
+model Contact {
+  id              String                  @id @default(cuid()) @map("_id") @db.ObjectId
+  organizationId  String                  @map("_organizationId") @db.ObjectId
+  name            String?
+  phoneNumber     String
+  email           String?
+  metadata        Json?
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+  organization    Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  calls           Call[]                  @relation("TargetContact")
+  contactGroups   ContactGroupMembership[]
+
+  @@index([organizationId, phoneNumber])
+}
+
+// ContactGroup: Represents a group of contacts for bulk operations
+model ContactGroup {
+  id             String                   @id @default(cuid()) @map("_id") @db.ObjectId
+  organizationId String                   @map("_organizationId") @db.ObjectId
+  name           String                   @unique
+  description    String?
+  createdAt      DateTime                 @default(now())
+  updatedAt      DateTime                 @updatedAt
+  organization   Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  members        ContactGroupMembership[]
+  bulkCalls      Call[]                   @relation("BulkCallGroup")
+
+  @@index([organizationId, name])
+}
+
+// ContactGroupMembership: Junction table for Contact-ContactGroup relationship
+model ContactGroupMembership {
+  id             String       @id @default(cuid()) @map("_id") @db.ObjectId
+  contactId      String       @map("_contactId") @db.ObjectId
+  contactGroupId String       @map("_contactGroupId") @db.ObjectId
+  assignedAt     DateTime     @default(now())
+  contact        Contact      @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  contactGroup   ContactGroup @relation(fields: [contactGroupId], references: [id], onDelete: Cascade)
+
+  @@index([contactId, contactGroupId])
+}
+
+// Call: Represents a scheduled or initiated call instance
+model Call {
+  id                 String         @id @default(cuid()) @map("_id") @db.ObjectId
+  organizationId     String         @map("_organizationId") @db.ObjectId
+  agentId            String         @map("_agentId") @db.ObjectId
+  initiatorId        String?        @map("_initiatorId") @db.ObjectId
+  targetContactId    String?        @map("_targetContactId") @db.ObjectId
+  targetContact      Contact?       @relation("TargetContact", fields: [targetContactId], references: [id], onDelete: SetNull)
+  originatingNumberId String?       @map("_originatingNumberId") @db.ObjectId
+  originatingNumber  PhoneNumber?   @relation("OriginatingNumber", fields: [originatingNumberId], references: [id], onDelete: SetNull)
+  inboundCallFrom    String?
+  scheduledAt        DateTime?
+  initiatedAt        DateTime?
+  endedAt            DateTime?
+  status             CallStatus     @default(PENDING)
+  callType           CallType       @default(OUTBOUND)
+  bulkCallGroupId    String?        @map("_bulkCallGroupId") @db.ObjectId
+  bulkCallGroup      ContactGroup?  @relation("BulkCallGroup", fields: [bulkCallGroupId], references: [id], onDelete: SetNull)
+  isRepeated         Boolean        @default(false)
+  parentCallId       String?        @map("_parentCallId") @db.ObjectId
+  parentCall         Call?          @relation("RepeatedCalls", fields: [parentCallId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  repeatedCalls      Call[]         @relation("RepeatedCalls")
+  organization       Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  agent              Agent          @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  initiator          User?          @relation("CreatedCalls", fields: [initiatorId], references: [id], onDelete: SetNull)
+  callRecord         CallRecord?
+  conversation       Conversation?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  @@index([organizationId, agentId, status, callType])
+}
+
+// CallRecord: Logs details of a completed or attempted call
+model CallRecord {
+  id              String           @id @default(cuid()) @map("_id")
+  callId          String           @unique @map("_callId") @db.ObjectId
+  call            Call             @relation(fields: [callId], references: [id], onDelete: Cascade)
+  durationSeconds Int?
+  cost            Float?
+  recordingUrl    String?
+  transcriptText  String?
+  disposition     CallDisposition?
+  metadata        Json?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+}
+
+// Conversation: Tracks dialogue flow within a call
+model Conversation {
+  id             String            @id @default(cuid()) @map("_id") @db.ObjectId
+  agentId        String            @map("_agentId") @db.ObjectId
+  agent          Agent             @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  callId         String?           @unique @map("_callId") @db.ObjectId
+  call           Call?             @relation(fields: [callId], references: [id], onDelete: Cascade)
+  endUserId      String
+  channel        ChannelType       @default(VOICE)
+  startTime      DateTime          @default(now())
+  endTime        DateTime?
+  status         ConversationStatus @default(ACTIVE)
+  context        Json?
+  messages       Message[]
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  @@index([agentId, callId])
+}
+
+// Message: Represents an individual utterance or message in a conversation
+model Message {
+  id             String         @id @default(cuid()) @map("_id")
+  conversationId String         @map("_conversationId") @db.ObjectId
+  conversation   Conversation   @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         SenderType
+  content        String?
+  mediaUrl       String?
+  mediaType      String?
+  timestamp      DateTime       @default(now())
+  isRead         Boolean        @default(false)
+  deliveryStatus DeliveryStatus?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([conversationId, timestamp])
+}
+
+// Lead: Tracks potential customers
+model Lead {
+  id             String       @id @default(cuid()) @map("_id")
+  organizationId String       @map("_organizationId") @db.ObjectId
+  agentId        String?      @map("_agentId") @db.ObjectId
+  sourceChannel  String?
+  contactInfo    Json
+  status         LeadStatus   @default(NEW)
+  notes          String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  agent          Agent?       @relation(fields: [agentId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, status])
+}
+
+// DataLibraryItem: Stores reusable data or knowledge base entries
+model DataLibraryItem {
+  id             String          @id @default(cuid()) @map("_id")
+  organizationId String          @map("_organizationId") @db.ObjectId
+  agentId        String?         @map("_agentId") @db.ObjectId
+  name           String
+  type           DataLibraryType @default(FAQ)
+  content        String?
+  metaData       Json?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  agent          Agent?          @relation(fields: [agentId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, type])
+}
+
+// Project: Organizes agents and resources
+model Project {
+  id             String             @id @default(cuid()) @map("_id") @db.ObjectId
+  name           String
+  description    String?
+  organizationId String             @map("_organizationId") @db.ObjectId
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  agents         ProjectAssignment[]
+
+  @@index([organizationId, name])
+}
+
+// ProjectAssignment: Junction table for Project-Agent relationship
+model ProjectAssignment {
+  id         String       @id @default(cuid()) @map("_id") @db.ObjectId
+  projectId  String       @map("_projectId") @db.ObjectId
+  agentId    String       @map("_agentId") @db.ObjectId
+  createdAt  DateTime     @default(now())
+  project    Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  agent      Agent        @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, agentId])
+}
+
+// AgentManagerAssignment: Junction table for Agent-User (manager) relationship
+model AgentManagerAssignment {
+  agentId   String       @map("_agentId") @db.ObjectId
+  userId    String       @map("_userId") @db.ObjectId
+  createdAt DateTime     @default(now())
+  agent     Agent        @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  id        String   @id @default(cuid()) @map("_id") @db.ObjectId
+  @@unique([agentId, userId])
+}
+
+// Enums for consistent status and type fields
+enum UserRole {
+  ADMIN
+  MEMBER
+}
+
+enum AgentType {
+  VOICE_ASSISTANT
+  MESSAGING_AGENT
+}
+
+enum AgentStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+}
+
+enum PhoneNumberType {
+  LOCAL
+  TOLL_FREE
+  NATIONAL
+}
+
+enum PhoneNumberStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum CallStatus {
+  PENDING
+  DIALING
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+  CANCELED
+}
+
+enum CallType {
+  OUTBOUND
+  INBOUND
+}
+
+enum CallDisposition {
+  ANSWERED
+  BUSY
+  NO_ANSWER
+  VOICEMAIL
+  HUMAN_TRANSFER
+}
+
+enum ChannelType {
+  VOICE
+  WHATSAPP
+  SMS
+}
+
+enum ConversationStatus {
+  ACTIVE
+  COMPLETED
+  ABANDONED
+}
+
+enum SenderType {
+  END_USER
+  AGENT
+}
+
+enum DeliveryStatus {
+  SENT
+  DELIVERED
+  FAILED
+}
+
+enum LeadStatus {
+  NEW
+  QUALIFIED
+  CONTACTED
+  CONVERTED
+}
+
+enum DataLibraryType {
+  FAQ
+  DOCUMENT
+  TRAINING_PHRASE
+  PRODUCT_INFO
+}
