@@ -25,9 +25,11 @@ export default function Page() {
 
   const dropdownItems = [
     { label: "All Products", value: "all" },
-    { label: "Conversational AI", value: "conversational-ai" },
-    { label: "Analytics Tools", value: "analytics" },
-    { label: "Automation", value: "automation" },
+    { label: "Sales", value: "sales" },
+    { label: "Support", value: "support" },
+    { label: "Healthcare", value: "healthcare" },
+    { label: "E-commerce", value: "e-commerce" },
+    { label: "Real Estate", value: "realestate" },
   ];
 
 
@@ -41,32 +43,34 @@ export default function Page() {
                 <Card className="data-[slot=card]:bg-card data-[slot=card]:shadow-xs">
                   <CardHeader>
                     <CardDescription>Dashboard Overview</CardDescription>
-                    <CardTitle className="text-2xl font-semibold tabular-nums">
-                      Product Highlight: Conversational AI
+                    <CardTitle className="text-xl font-semibold tabular-nums">
+                      Leads Overview: 1,245 Active Leads
+                    </CardTitle>
+                    <CardTitle className="text-xl font-semibold tabular-nums">
+                      Track and manage all leads, employees, and AI agents in real-time.
+                    </CardTitle>
+                    <CardTitle className="text-xl font-semibold tabular-nums">
+                      Conversation this month: 8,430 | Revenue: $12,450
                     </CardTitle>
                   </CardHeader>
                   <CardFooter className="flex-col items-start gap-1.5 text-sm">
-                    <div className="text-muted-foreground">
+                    {/* <div className="text-muted-foreground">
                       Design and deploy AI Assistants with global telephony and dedicated infrastructure for agile, scalable and real-time engagement.
-                    </div>
+                    </div> */}
                   </CardFooter>
                   <CardAction className="flex justify-end px-4">
                     <Button variant="outline" size="sm" className="w-full">
-                      Learn More
+                      View Reports
                     </Button>
                   </CardAction>
                 </Card>
               </div>
 
               <div className="flex flex-col gap-4 px-4 lg:px-6">
-                <div className="text-lg font-semibold"> <span className="px-2">Explore Products</span>
+                <div className="text-lg font-semibold"> <span className="px-2">Select Category</span>
                   <ColumnDropdown
                     items={dropdownItems}
-                    triggerText="Buy Product"
-                  />
-                  <ColumnDropdown
-                    items={dropdownItems}
-                    triggerText="Buy use-case"
+                    triggerText="Filter"
                   />
                 </div>
               </div>
@@ -75,7 +79,7 @@ export default function Page() {
                 <div className="text-lg font-semibold"> <span className="px-2">Explore Products</span>
                 </div>
               </div>
-              <HelpCards />
+            
               
               <Card className="data-[slot=card]:bg-card data-[slot=card]:shadow-xs">
                 <CardHeader>
@@ -103,10 +107,7 @@ export default function Page() {
               </Card>
 
 
-              <div className="px-4 lg:px-6">
-                <ChartAreaInteractive />
-              </div>
-              <DataTable data={data} />
+          
             </div>
           </div>
         </div>
