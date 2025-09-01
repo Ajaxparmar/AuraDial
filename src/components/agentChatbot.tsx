@@ -1,10 +1,15 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Send } from 'lucide-react'; // Assuming you're using lucide-react for icons
+import Groq from "groq-sdk";
+
+const groq = new Groq({
+    apiKey: "", // 🔑 hard-coded for testing
+    dangerouslyAllowBrowser: true,   // ⚠️ allow running in browser
+});
 
 interface Message {
   id: number;
@@ -15,28 +20,51 @@ interface Message {
 
 const ChatbotPanel = () => {
   const [chatInput, setChatInput] = useState('');
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 1,
-      text: "Create a voice AI agent that guides callers through product selection and purchasing. Personality: - Friendly, persuasive, and confident—never pushy. Capabilities: - Ask conversational questions to understand needs and budget. - Explain product benefits in plain language",
-      sender: 'user',
-      timestamp: 'August 18, 2025 at 05:37 PM',
-    },
-    {
-      id: 2,
-      text: "Your assistant is ready. This helper chat will guide you with your agent setup, integrations, and platform help. Ask anything, like: \"How do I integrate with NLU?\"",
-      sender: 'bot',
-      timestamp: 'August 18, 2025 at 05:37 PM',
-    },
-    {
-      id: 3,
-      text: "Your agents ready! Shall we move to the next step?",
-      sender: 'bot',
-      timestamp: 'August 18, 2025 at 05:37 PM',
-    },
-  ]);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
 
-  const handleSendMessage = () => {
+  // Load chat history from localStorage only on the client side
+  useEffect(() => {
+    const savedMessages = localStorage.getItem('chatHistory');
+    if (savedMessages) {
+      setMessages(JSON.parse(savedMessages));
+    } else {
+      setMessages([
+        {
+          id: 1,
+          text: "Create a voice AI agent that guides callers through product selection and purchasing. Personality: - Friendly, persuasive, and confident—never pushy. Capabilities: - Ask conversational questions to understand needs and budget. - Explain product benefits in plain language",
+          sender: 'user',
+          timestamp: 'August 18, 2025 at 05:37 PM',
+        },
+        {
+          id: 2,
+          text: "Your assistant is ready. This helper chat will guide you with your agent setup, integrations, and platform help. Ask anything, like: \"How do I integrate with NLU?\"",
+          sender: 'bot',
+          timestamp: 'August 18, 2025 at 05:37 PM',
+        },
+        {
+          id: 3,
+          text: "Your agents ready! Shall we move to the next step?",
+          sender: 'bot',
+          timestamp: 'August 18, 2025 at 05:37 PM',
+        },
+      ]);
+    }
+  }, []);
+
+  // Save chat history to localStorage whenever messages change
+  useEffect(() => {
+    localStorage.setItem('chatHistory', JSON.stringify(messages));
+  }, [messages]);
+
+  // Scroll to the bottom whenever messages update
+  useEffect(() => {
+    if (scrollAreaRef.current) {
+      scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
+    }
+  }, [messages]);
+
+  const handleSendMessage = async () => {
     if (chatInput.trim() === '') return;
 
     const newMessage: Message = {
@@ -53,14 +81,22 @@ const ChatbotPanel = () => {
       }),
     };
 
-    setMessages([...messages, newMessage]);
+    setMessages((prev) => [...prev, newMessage]);
     setChatInput('');
 
-    // Simulate bot response (replace with actual API call in production)
-    setTimeout(() => {
-      const botResponse: Message = {
+    try {
+      // Send chat history with the new message to the API
+      const chatHistoryForAPI = messages.map(msg => ({
+        role: msg.sender === 'user' ? 'user' : 'assistant',
+        content: msg.text,
+      })).concat({ role: 'user', content: newMessage.text });
+
+      const chatCompletion = await getGroqChatCompletion(chatHistoryForAPI);
+      const botResponse = chatCompletion.choices[0]?.message?.content || "Sorry, I couldn't process that.";
+
+      const botMessage: Message = {
         id: messages.length + 2,
-        text: "Got your message! How can I assist you further?",
+        text: botResponse,
         sender: 'bot',
         timestamp: new Date().toLocaleString('en-US', {
           year: 'numeric',
@@ -71,8 +107,24 @@ const ChatbotPanel = () => {
           hour12: true,
         }),
       };
-      setMessages((prev) => [...prev, botResponse]);
-    }, 1000);
+      setMessages((prev) => [...prev, botMessage]);
+    } catch (error) {
+      console.error("Error fetching Groq response:", error);
+      const errorMessage: Message = {
+        id: messages.length + 2,
+        text: "Oops! Something went wrong. Please try again later.",
+        sender: 'bot',
+        timestamp: new Date().toLocaleString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: 'numeric',
+          minute: 'numeric',
+          hour12: true,
+        }),
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -82,10 +134,17 @@ const ChatbotPanel = () => {
     }
   };
 
+  async function getGroqChatCompletion(history: { role: string; content: string }[]) {
+    return groq.chat.completions.create({
+      messages: history,
+      model: "openai/gpt-oss-20b",
+    });
+  }
+
   return (
-    <div className="w-1/3 p-4 bg-gray-800 flex flex-col">
-      <h2 className="text-xl font-bold mb-4 text-white">Aura AI</h2>
-      <ScrollArea className="flex-grow mb-4">
+    <div className="w-1/3 p-4 bg-gray-800 flex flex-col rounded-lg shadow-lg h-full">
+      <h2 className="text-xl font-bold mb-4 text-white">Chatbot</h2>
+      <div ref={scrollAreaRef} className="flex-grow mb-4 overflow-y-auto">
         <div className="space-y-4">
           {messages.map((message) => (
             <div
@@ -101,7 +160,7 @@ const ChatbotPanel = () => {
             </div>
           ))}
         </div>
-      </ScrollArea>
+      </div>
       <div className="flex gap-2">
         <Textarea
           value={chatInput}
