@@ -1,10 +1,6 @@
 "use client";
-import { AppSidebar } from "@/components/app-sidebar";
-import { ChartAreaInteractive } from "@/components/chart-area-interactive";
-import { DataTable } from "@/components/data-table";
 import { SectionCards } from "@/components/section-cards";
-import { SiteHeader } from "@/components/site-header";
-import { HelpCards } from "@/components/help-cards";
+import { useState } from "react";
 import {
   Card,
   CardAction,
@@ -13,24 +9,24 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import data from "./data.json";
 import { Button } from "@/components/ui/button";
 import ColumnDropdown from "@/components/ColumnDropdown";
 
 export default function Page() {
+  const [selectedCategory, setSelectedCategory] = useState("all");
+
   const dropdownItems = [
     { label: "All Agents", value: "all" },
-    { label: "General", value: "general" },
-    { label: "Sales&Marketing", value: "sales" },
-    { label: "CustomerSupport", value: "support" },
-    { label: "Healthcare&Appointments", value: "healthcare" },
-    { label: "Hospitality&Services", value: "hospitality" },
-    { label: "Education", value: "education" },
-    { label: "ProfessionalServices", value: "professional" },
-    { label: "Events&Community", value: "events" },
-    { label: "Logistics", value: "logistics" },
-    { label: "EmergencyServices", value: "emergency" },
+    { label: "General", value: "General" },
+    { label: "Sales & Marketing", value: "Sales&Marketing" },
+    { label: "Customer Support", value: "CustomerSupport" },
+    { label: "Healthcare & Appointments", value: "Healthcare&Appointments" },
+    { label: "Hospitality & Services", value: "Hospitality&Services" },
+    { label: "Education", value: "Education" },
+    { label: "Professional Services", value: "ProfessionalServices" },
+    { label: "Events & Community", value: "Events&Community" },
+    { label: "Logistics", value: "Logistics" },
+    { label: "Emergency Services", value: "EmergencyServices" },
   ];
 
   return (
@@ -62,10 +58,14 @@ export default function Page() {
             <div className="text-lg font-semibold">
               {" "}
               <span className="px-2">Select Category</span>
-              <ColumnDropdown items={dropdownItems} triggerText="Filter" />
+              <ColumnDropdown
+                      items={dropdownItems}
+                      triggerText="Filter"
+                      onSelect={(value: string) => setSelectedCategory(value)}
+                    />
             </div>
           </div>
-          <SectionCards />
+          <SectionCards selectedCategory={selectedCategory} />
           <div className="flex flex-col gap-4 px-4 lg:px-6">
             <div className="text-lg font-semibold">
               {" "}

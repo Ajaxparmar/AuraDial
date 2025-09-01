@@ -162,33 +162,42 @@ const cardData = [
   },
 ];
 
-export function SectionCards() {
-  return (
-    <div className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs lg:px-6 md:grid-cols-3">
-      {cardData.map((card, index) => (
-        <Card key={index} className="@container/card">
-          <CardHeader>
-            <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-              {card.title}
-            </CardTitle>
-            {card.hasAction && <CardAction />}
-          </CardHeader>
-          <CardFooter className="flex-col items-start gap-1.5 text-sm">
-            <div className="line-clamp-1 flex gap-2 font-medium">
-              {card.description}
-            </div>
-            <div className="text-muted-foreground mt-4">
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full rounded-full"
-              >
-                {card.buttonText}
-              </Button>
-            </div>
-          </CardFooter>
-        </Card>
-      ))}
-    </div>
-  );
-}
+
+export function SectionCards({ selectedCategory }: { selectedCategory: string }) {
+  // ✅ Apply filter
+  const filteredCards =
+    selectedCategory === "all"
+      ? cardData
+      : cardData.filter((card) => card.category === selectedCategory);
+
+
+      return (
+        <div className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs lg:px-6 md:grid-cols-3">
+          {filteredCards.map((card, index) => (
+            <Card key={index} className="@container/card">
+              <CardHeader>
+                <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+                  {card.title}
+                </CardTitle>
+                {card.hasAction && <CardAction />}
+              </CardHeader>
+              <CardFooter className="flex-col items-start gap-1.5 text-sm">
+                <div className="line-clamp-1 flex gap-2 font-medium">
+                  {card.description}
+                </div>
+                <div className="text-muted-foreground mt-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full rounded-full"
+                  >
+                    {card.buttonText}
+                  </Button>
+                </div>
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
+      );
+    }
+    

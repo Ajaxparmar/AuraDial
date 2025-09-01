@@ -46,10 +46,9 @@ export function NavMain({
   ]
 
   const buttonClasses = (menu: string) =>
-    `min-w-8 duration-200 ease-linear ${
-      activeMenu === menu
-        ? "bg-primary text-primary-foreground"
-        : "hover:bg-primary/90 hover:text-primary-foreground"
+    `min-w-8 duration-200 ease-linear ${activeMenu === menu
+      ? "bg-primary text-primary-foreground"
+      : "hover:bg-primary/90 hover:text-primary-foreground"
     }`
 
   return (
@@ -59,6 +58,7 @@ export function NavMain({
           {/* Voice Agents Section */}
           <SidebarMenuItem>
             <SidebarMenuButton
+              asChild
               onClick={() => {
                 setIsVoiceAgentDropdownOpen(!isVoiceAgentDropdownOpen)
                 handleMenuClick("voiceAgents")
@@ -67,17 +67,19 @@ export function NavMain({
               aria-controls="voiceagents-dropdown"
               className={buttonClasses("voiceAgents")}
             >
-              <IconPhoneCalling />
-              <span>Voice Agents</span>
+              <Link href="/dashboard" className="flex items-center gap-2">
+                <IconPhoneCalling />
+                <span>Voice Agents</span>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
+
           <div
             id="voiceagents-dropdown"
-            className={`ml-6 flex flex-col gap-1 overflow-hidden transition-all duration-300 ease-in-out ${
-              isVoiceAgentDropdownOpen
+            className={`ml-6 flex flex-col gap-1 overflow-hidden transition-all duration-300 ease-in-out ${isVoiceAgentDropdownOpen
                 ? "max-h-96 opacity-100 translate-y-0"
                 : "max-h-0 opacity-0 -translate-y-2"
-            }`}
+              }`}
             role="menu"
           >
             {voiceAgents.map((option) => (
@@ -108,11 +110,10 @@ export function NavMain({
           </SidebarMenuItem>
           <div
             id="leads-dropdown"
-            className={`ml-6 flex flex-col gap-1 overflow-hidden transition-all duration-300 ease-in-out ${
-              isLeadsDropdownOpen
+            className={`ml-6 flex flex-col gap-1 overflow-hidden transition-all duration-300 ease-in-out ${isLeadsDropdownOpen
                 ? "max-h-96 opacity-100 translate-y-0"
                 : "max-h-0 opacity-0 -translate-y-2"
-            }`}
+              }`}
             role="menu"
           >
             {leadOptions.map((option) => (
@@ -143,11 +144,10 @@ export function NavMain({
           </SidebarMenuItem>
           <div
             id="employee-dropdown"
-            className={`ml-6 flex flex-col gap-1 overflow-hidden transition-all duration-300 ease-in-out ${
-              isEmployeeDropdownOpen
+            className={`ml-6 flex flex-col gap-1 overflow-hidden transition-all duration-300 ease-in-out ${isEmployeeDropdownOpen
                 ? "max-h-96 opacity-100 translate-y-0"
                 : "max-h-0 opacity-0 -translate-y-2"
-            }`}
+              }`}
             role="menu"
           >
             {employeeOptions.map((option) => (
