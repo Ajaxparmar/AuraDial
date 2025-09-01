@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import ButtonGroup from "@/components/agentButtonGroup";
-import WelcomeMessageSection from "@/components/WelcomeMessageSection";
+import WelcomeMessageSection from "@/components/welcomeMessageSection";
 import ConversationalFlowSection from "@/components/ConversationalFlow";
 import KnowledgeBasePanel from "@/components/KnowledgeBase"; // renamed for clarity
 
@@ -36,9 +36,7 @@ const MainContent = () => {
         );
       case "knowledge":
         return (
-          <KnowledgeBasePanel
-            onClose={() => setActiveSection("welcome")}
-          />
+          <KnowledgeBasePanel/>
         );
       default:
         return null;

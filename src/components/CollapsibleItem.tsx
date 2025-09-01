@@ -22,7 +22,7 @@ interface CollapsibleItemProps {
 const CollapsibleItem: React.FC<CollapsibleItemProps> = ({ title, id, checked, defaultValue }) => {
   return (
     <Collapsible>
-      <div className="flex items-center w-full p-2 bg-gray-700 rounded">
+      <div className="flex items-center w-full p-2 rounded">
         {/* Collapsible Trigger */}
         <CollapsibleTrigger className="flex-1 text-left">
           {title}
