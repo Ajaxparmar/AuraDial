@@ -9,31 +9,31 @@ const ConversationalFlowSection = () => {
       title: "1. Greeting and Rapport Building",
       id: "greeting",
       checked: true,
-      defaultValue: "Warm greeting and quick rapport-building.",
+      defaultValue: "Start with a warm and quick greeting",
     },
     {
       title: "2. Needs Discovery",
       id: "needs",
       checked: true,
-      defaultValue: "Ask conversational questions to understand customer needs and budget.",
+      defaultValue: "Ask conversational questions to understand the customer's needs and budget.",
     },
     {
       title: "3. Product Recommendation",
       id: "recommendation",
       checked: true,
-      defaultValue: "Explain product benefits in plain language and recommend based on needs.",
+      defaultValue: "Explain product benefits in plain language and recommend based on their needs.",
     },
     {
       title: "4. Objection Handling and Interest Confirmation",
       id: "objection",
       checked: false,
-      defaultValue: "Address objections confidently and confirm customer interest.",
+      defaultValue: "Address objections confidently and If the customer is interested, confirm the customer's interest level.",
     },
     {
-      title: "5. Order Finalization or Follow-up",
+      title: "5. Closing for Automated Flagging",
       id: "finalization",
       checked: false,
-      defaultValue: "Finalize the order or arrange follow-up if needed.",
+      defaultValue: "If the customer is interested, confirm their interest one last time, thank them for their time, and end the call professionally. The system will automatically flag this call with an interest score in the call logs based on this conversation.",
     },
   ];
 

@@ -40,22 +40,8 @@ model User {
   createdAgents  Agent[]                  @relation("CreatedAgents")
   managedAgents  AgentManagerAssignment[]
   createdCalls   Call[]                   @relation("CreatedCalls")
-  posts          Post[]                   // From original schema
 
   @@index([email, organizationId])
-}
-
-// Post: Represents a blog post or content created by a user
-model Post {
-  id        String    @id @default(auto()) @map("_id") @db.ObjectId
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  published Boolean   @default(false)
-  title     String
-  author    User?     @relation(fields: [authorId], references: [id])
-  authorId  String    @map("_authorId") @db.ObjectId
-
-  @@index([authorId])
 }
 
 // Agent: Represents a conversational AI agent (e.g., Voice Assistant)
@@ -197,6 +183,7 @@ model Call {
   conversation       Conversation?
   createdAt          DateTime       @default(now())
   updatedAt          DateTime       @updatedAt
+  generatedLead       Lead?
 
   @@index([organizationId, agentId, status, callType])
 }
@@ -214,8 +201,30 @@ model CallRecord {
   metadata        Json?
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
-
+  analysisStatus  AnalysisStatus @default(PENDING) // To track if analysis is done
+  cqsScore        Float?         // Call Quality Score, e.g., 4.10
+  cqsDescription  String?        // "Excellent", "Good", "Average"
+  emotion         String?        // "Neutral", "Happy", "Frustrated"
+  purchaseIntent  Int?           // Score from 1-10
+  callOutcome     CallOutcome? // "Sale Completed", "Follow-up Required", etc.
+  // We use `callOutcome` to avoid conflict with `Call.status`
 }
+  enum AnalysisStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+enum CallOutcome {
+  INQUIRY
+  ISSUE_RESOLVED
+  SALE_COMPLETED
+  FOLLOW_UP_REQUIRED
+  NOT_INTERESTED
+  ESCALATE_TO_HUMAN
+  VOICEMAIL
+  OTHER
+}
+
 
 // Conversation: Tracks dialogue flow within a call
 model Conversation {
@@ -268,6 +277,15 @@ model Lead {
   updatedAt      DateTime     @updatedAt
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   agent          Agent?       @relation(fields: [agentId], references: [id], onDelete: SetNull)
+
+  // This field stores the actual ID of the call that generated the lead.
+  // It is marked as @unique to ensure one call can only create one lead.
+  sourceCallId     String?      @unique @map("_sourceCallId") @db.ObjectId
+
+  // This is the Prisma relation field. It uses sourceCallId to let you easily
+  // access the full Call object in your code.
+  sourceCall       Call?        @relation(fields: [sourceCallId], references: [id], onDelete: SetNull)
+
 
   @@index([organizationId, status])
 }

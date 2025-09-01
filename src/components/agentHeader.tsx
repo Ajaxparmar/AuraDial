@@ -26,10 +26,10 @@ const Header = () => {
       <div className="hidden md:flex space-x-2">
         <Button className="bg-teal-500 text-white hover:bg-teal-600">Test with</Button>
         <Button className="bg-teal-500 text-white hover:bg-teal-600">Chat</Button>
-        <Button className="bg-teal-500 text-white hover:bg-teal-600">Web Call</Button>
         <Button className="bg-teal-500 text-white hover:bg-teal-600">Phone Call</Button>
+        {/* <Button className="bg-teal-500 text-white hover:bg-teal-600">Save</Button> */}
         <Button className="bg-teal-500 text-white hover:bg-teal-600">
-          Deploy <span className="ml-1">&#9660;</span>
+        Save <span className="ml-1">&#9660;</span>
         </Button>
       </div>
 
